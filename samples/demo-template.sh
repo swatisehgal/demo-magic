@@ -112,15 +112,15 @@ pe "cat /root/go/src/k8s.io/kubernetes/pkg/kubelet/apis/podresources/v1alpha1/ap
 p "# Nodes in the Kubernetes cluster"
 pe "kubectl get nodes"
 # Show device plugins
-p "# SR-IOV network operator has been already deployed on this cluster"
+p "# Device Plugin (example.com/deviceA) has been deployed on this cluster"
 pe "kubectl get node cnfd0-worker-0.fci1.kni.lab.eng.bos.redhat.com -o json | jq '.status.allocatable'"
 pe "kubectl get node cnfd2-worker-0.fci1.kni.lab.eng.bos.redhat.com -o json | jq '.status.allocatable'"
 # Show running workloads
 p "# Workloads running in the RTE namespace"
 pe "kubectl get pods -o wide -n rte"
-pe "kubectl exec sample-pod -n rte -- env | grep PCIDEVICE_OPENSHIFT_IO_SRIOV"
-pe "kubectl exec sample-pod-2 -n rte -- env | grep PCIDEVICE_OPENSHIFT_IO_SRIOV"
-pe "kubectl exec sample-pod-3 -n rte -- env | grep PCIDEVICE_OPENSHIFT_IO_SRIOV"
+pe "kubectl exec pod-1 -n rte -- env | grep EXAMPLECOM"
+pe "kubectl exec pod-2 -n rte -- env | grep EXAMPLECOM"
+pe "kubectl exec pod-3 -n rte -- env | grep EXAMPLECOM"
 # Show noderesourcetopologies crd
 p "# NodeResourceTopology CRD"
 pe "kubectl get crd | grep noderesourcetopologies"
@@ -149,12 +149,12 @@ wait
 pe "kubectl get pods -n kube-system"
 # Run workload using this new scheduler
 p "# Deploying pods requesting resources; scheduled by the Topology aware scheduler (my-scheduler)"
-pe "cat manifests/test-pod.yaml"
+pe "cat manifests/topology.k8s.io/testpod.yaml"
 pe "make deploy-pod"
 # Will wait until user presses enter
 PROMPT_TIMEOUT=4
 wait
-pe "kubectl get pods -o wide -n rte"
+pe "kubectl get pods -o wide  "
 p "# As can be seen the pod is scheduled on cnfd0-worker"
 
 
