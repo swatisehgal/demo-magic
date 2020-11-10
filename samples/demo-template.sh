@@ -107,55 +107,49 @@
 # pe "oc exec sample-pod-2 -n rte -- env | grep PCIDEVICE_OPENSHIFT_IO_SRIOV"
 
 # Kubectl version
-pe "cd /root/go/src/github.com/swatisehgal/resource-topology-exporter"
-pe "cat /root/go/src/k8s.io/kubernetes/pkg/kubelet/apis/podresources/v1alpha1/api.proto"
+pe "cd /root/go/src/github.com/kubernetes-sigs/node-feature-discovery"
 p "# Nodes in the Kubernetes cluster"
 pe "kubectl get nodes"
 # Show device plugins
-p "# Device Plugin (example.com/deviceA) has been deployed on this cluster"
-pe "kubectl get node cnfd0-worker-0.fci1.kni.lab.eng.bos.redhat.com -o json | jq '.status.allocatable'"
-pe "kubectl get node cnfd2-worker-0.fci1.kni.lab.eng.bos.redhat.com -o json | jq '.status.allocatable'"
+p "# Device Plugins (deviceA and deviceB) have been deployed on this cluster"
+pe "kubectl get node kind-control-plane  -o json | jq '.status.allocatable'"
+pe "kubectl get node kind-worker -o json | jq '.status.allocatable'"
 # Show running workloads
 p "# Workloads running in the RTE namespace"
 pe "kubectl get pods -o wide -n rte"
-pe "kubectl exec pod-1 -n rte -- env | grep EXAMPLECOM"
-pe "kubectl exec pod-2 -n rte -- env | grep EXAMPLECOM"
-pe "kubectl exec pod-3 -n rte -- env | grep EXAMPLECOM"
+pe "kubectl logs test-deployment-1-77885667bc-h2wk4 -n rte"
+pe "kubectl logs test-deployment-2-868ff7fdf4-kzfsq -n rte"
 # Show noderesourcetopologies crd
 p "# NodeResourceTopology CRD"
-pe "kubectl get crd | grep noderesourcetopologies"
+pe "kubectl get crd"
 pe "kubectl get noderesourcetopologies"
-p "# Latest Resource Toplogy Exporter"
-pe "cat manifests/resource-topology-exporter-ds.yaml"
-# Deploy RTE
-pe "make deploy"
-# Will wait until user presses enter
-PROMPT_TIMEOUT=2
-wait
-# Show RTE running
-pe "kubectl get pods -o wide"
+p "# Node feature Discovery Daemonset"
+pe "cat nfd-daemonset-master-topologyupdater-combined.yaml"
+# Deploy NFD
+pe "kubectl create -f nfd-daemonset-master-topologyupdater-combined.yaml"
+pe " kubectl get pods -n node-feature-discovery -o wide"
 # Show noderesourcetopologies crds for both the nodes
 pe "kubectl get noderesourcetopologies"
-pe "kubectl describe noderesourcetopologies cnfd0-worker-0.fci1.kni.lab.eng.bos.redhat.com"
-pe "kubectl describe noderesourcetopologies cnfd2-worker-0.fci1.kni.lab.eng.bos.redhat.com"
-# Deploy custom scheduler
-p "# Deploying Topology Aware Scheduler"
-pe "kubectl get pods -n kube-system"
-pe "cd /root/go/src/k8s.io/my-sched"
-pe "make deploy"
-# Will wait until user presses enter
-PROMPT_TIMEOUT=4
-wait
-pe "kubectl get pods -n kube-system"
-# Run workload using this new scheduler
-p "# Deploying pods requesting resources; scheduled by the Topology aware scheduler (my-scheduler)"
-pe "cat manifests/topology.k8s.io/testpod.yaml"
-pe "make deploy-pod"
-# Will wait until user presses enter
-PROMPT_TIMEOUT=4
-wait
-pe "kubectl get pods -o wide  "
-p "# As can be seen the pod is scheduled on cnfd0-worker"
+pe "kubectl describe noderesourcetopologies kind-control-plane"
+pe "kubectl describe noderesourcetopologies kind-worker"
+# # Deploy custom scheduler
+# p "# Deploying Topology Aware Scheduler"
+# pe "kubectl get pods -n kube-system"
+# pe "cd /root/go/src/k8s.io/my-sched"
+# pe "make deploy"
+# # Will wait until user presses enter
+# PROMPT_TIMEOUT=4
+# wait
+# pe "kubectl get pods -n kube-system"
+# # Run workload using this new scheduler
+# p "# Deploying pods requesting resources; scheduled by the Topology aware scheduler (my-scheduler)"
+# pe "cat manifests/topology.k8s.io/testpod.yaml"
+# pe "make deploy-pod"
+# # Will wait until user presses enter
+# PROMPT_TIMEOUT=4
+# wait
+# pe "kubectl get pods -o wide  "
+# p "# As can be seen the pod is scheduled on cnfd0-worker"
 
 
 # cleanup
