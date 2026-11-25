@@ -107,31 +107,111 @@
 # pe "oc exec sample-pod-2 -n rte -- env | grep PCIDEVICE_OPENSHIFT_IO_SRIOV"
 
 # Kubectl version
-pe "cd /root/go/src/github.com/kubernetes-sigs/node-feature-discovery"
-p "# Nodes in the Kubernetes cluster"
+pe "cd /root/numa-balance-demo"
+
+p "# Create a cluster with a single node: Kubelet is configured with "most-allocated" numa-allocation-strategy"
+pe "kind create cluster --name most-allocated --config most-allocated.yaml"
+
+PROMPT_TIMEOUT=4
+wait
+
+p "# Show nodes in the Kubernetes cluster"
 pe "kubectl get nodes"
-# Show device plugins
-p "# Device Plugins (deviceA and deviceB) have been deployed on this cluster"
-pe "kubectl get node kind-control-plane  -o json | jq '.status.allocatable'"
-pe "kubectl get node kind-worker -o json | jq '.status.allocatable'"
-# Show running workloads
-p "# Workloads running in the RTE namespace"
-pe "kubectl get pods -o wide -n rte"
-pe "kubectl logs test-deployment-1-77885667bc-h2wk4 -n rte"
-pe "kubectl logs test-deployment-2-868ff7fdf4-kzfsq -n rte"
-# Show noderesourcetopologies crd
-p "# NodeResourceTopology CRD"
-pe "kubectl get crd"
-pe "kubectl get noderesourcetopologies"
-p "# Node feature Discovery Daemonset"
-pe "cat nfd-daemonset-master-topologyupdater-combined.yaml"
-# Deploy NFD
-pe "kubectl create -f nfd-daemonset-master-topologyupdater-combined.yaml"
-pe " kubectl get pods -n node-feature-discovery -o wide"
-# Show noderesourcetopologies crds for both the nodes
-pe "kubectl get noderesourcetopologies"
-pe "kubectl describe noderesourcetopologies kind-control-plane"
-pe "kubectl describe noderesourcetopologies kind-worker"
+
+# Show CPU distribution across NUMA nodes
+p "# Show CPU distribution across NUMA nodes"
+pe "lscpu | grep NUMA"
+
+
+# Show kubelet configuration on the node
+p "# Show kubelet configuration on the node"
+pe "docker exec -it most-allocated-control-plane cat /var/lib/kubelet/config.yaml | grep topologyManagerPolicyOptions: -C 3"
+
+
+# Show and deploy 1st pod
+pe "cat pod-1.yaml"
+
+pe "kubectl create -f pod-1.yaml"
+
+
+# Show running pod
+p "# Workload running"
+pe "kubectl get pods"
+
+
+# Show allocated CPUs to the pod
+p "# Show allocated CPUs to the pod"
+pe " docker exec most-allocated-control-plane cat /var/lib/kubelet/cpu_manager_state | jq .entries"
+
+
+# Show and deploy 2nd pod
+pe "cat pod-2.yaml"
+
+pe "kubectl create -f pod-2.yaml"
+
+
+# Show running pod
+p "# Workload running"
+pe "kubectl get pods"
+
+
+# Show allocated CPUs to the pod
+p "# Show allocated CPUs to the pod"
+pe " docker exec most-allocated-control-plane cat /var/lib/kubelet/cpu_manager_state | jq .entries"
+
+p "# Delete the cluster"
+pe "kind delete cluster --name most-allocated"
+
+
+p "# Create a cluster with a single node: Kubelet is configured with "least-allocated" numa-allocation-strategy"
+pe "kind create cluster --name least-allocated --config least-allocated.yaml"
+
+PROMPT_TIMEOUT=4
+wait
+
+p "# Show nodes in the Kubernetes cluster"
+pe "kubectl get nodes"
+
+# Show CPU distribution across NUMA nodes
+p "# Show CPU distribution across NUMA nodes"
+pe "lscpu | grep NUMA"
+
+
+# Show kubelet configuration on the node
+p "# Show kubelet configuration on the node"
+pe "docker exec -it least-allocated-control-plane cat /var/lib/kubelet/config.yaml | grep topologyManagerPolicyOptions: -C 3"
+
+# Deploy 1st pod
+pe "kubectl create -f pod-1.yaml"
+
+
+# Show running pod
+p "# Workload running"
+pe "kubectl get pods"
+
+
+# Show allocated CPUs to the pod
+p "# Show allocated CPUs to the pod"
+pe " docker exec least-allocated-control-plane cat /var/lib/kubelet/cpu_manager_state | jq .entries"
+
+# Deploy 2nd pod
+pe "kubectl create -f pod-2.yaml"
+
+
+# Show running pod
+p "# Workload running"
+pe "kubectl get pods"
+
+
+# Show allocated CPUs to the pod
+p "# Show allocated CPUs to the pod"
+pe " docker exec least-allocated-control-plane cat /var/lib/kubelet/cpu_manager_state | jq .entries"
+
+p "# Delete the cluster"
+pe "kind delete cluster --name least-allocated"
+
+
+
 # # Deploy custom scheduler
 # p "# Deploying Topology Aware Scheduler"
 # pe "kubectl get pods -n kube-system"
